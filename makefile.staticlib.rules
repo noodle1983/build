@@ -1,0 +1,96 @@
+OUTDIR=.lib
+#########################################
+#        Auto TARGET                    #
+#########################################
+AUTOMSGDEF=$(wildcard AutoMsg/*.msg) 
+AUTOMSGTARGET=$(patsubst %.msg, %.h, $(AUTOMSGDEF))
+
+TOLUAPKG=$(wildcard LuaObject/*.pkg)
+TOLUACPP=$(patsubst %.pkg, %.cpp, $(TOLUAPKG))
+
+AUTOTARGET= $(AUTOMSGTARGET) $(TOLUACPP)
+
+#########################################
+#        TARGET                         #
+#########################################
+CFILES=$(foreach DIR, $(SUBDIR), $(wildcard $(DIR)/*.c))
+CPPFILES=$(foreach DIR, $(SUBDIR), $(wildcard $(DIR)/*.cpp)) \
+        $(TOLUACPP)
+TMPOBJECTS=$(patsubst %.cpp, %.o, $(CPPFILES)) \
+           $(patsubst %.c, %.o, $(CFILES)) 
+OUTSUBDIR=$(addprefix $(OUTDIR)/, $(SUBDIR))
+OBJECTS=$(addprefix $(OUTDIR)/, $(TMPOBJECTS))
+
+#########################################
+#        Test    Target                 #
+#########################################
+TESTDIR=UnitTest
+TESTCPPFILES=$(foreach DIR, $(TESTDIR), $(wildcard $(DIR)/*.cpp))
+TMPTESTOBJECTS=$(patsubst %.cpp, %.o, $(TESTCPPFILES))
+TESTOUTSUBDIR=$(addprefix $(OUTDIR)/, $(TESTDIR))
+TESTOBJECTS=$(addprefix $(OUTDIR)/, $(TMPTESTOBJECTS))
+TESTTARGET=$(basename $(notdir $(TESTOBJECTS)))
+
+#########################################
+#               Depend                  #
+#########################################
+DEPENDFILES=$(patsubst %.o, %.d, $(OBJECTS))
+DEPENDTARGET=$(patsubst %.d, %.d.tmp, $(DEPENDFILES))
+TESTDEPENDFILES=$(patsubst %.o, %.d, $(TESTOBJECTS))
+TESTDEPENDTARGET=$(patsubst %.d, %.d.tmp, $(TESTDEPENDFILES))
+
+#########################################
+#               Rules                   #
+#########################################
+all:$(TARGET)
+test:$(TESTTARGET)
+
+$(TARGET):$(AUTOTARGET) depend $(OUTDIR) $(OUTSUBDIR) $(OBJECTS)
+	$(AR) $(ARFLAGS) $(OUTDIR)/$(TARGET) $(OBJECTS)
+
+$(TESTTARGET):$(AUTOTARGET) $(TARGET) testdepend $(TESTOUTSUBDIR) $(TESTOBJECTS)
+	$(CC) $(CXXFLAGS) $(OUTDIR)/$(TESTDIR)/$@.o $(OUTDIR)/$(TARGET) $(LDFLAGS) -o $(OUTDIR)/$@
+
+$(OUTDIR):
+	@if [ ! -d $@ ]; then mkdir -p $@; fi;
+
+$(TESTOUTSUBDIR):
+	@if [ ! -d $@ ]; then mkdir -p $@; fi;
+
+$(OUTSUBDIR):
+	@if [ ! -d $@ ]; then mkdir -p $@; fi;
+
+-include $(DEPENDFILES)
+-include $(TESTDEPENDFILES)
+$(OUTDIR)/%.d.tmp:%.cpp
+	@echo "building dependancy for $<..."
+	@set -e; rm -f $@ $(OUTDIR)/$*.d; \
+	($(CC) $(CXXFLAGS) -MM -c $< > $@ || rm -f $@) &&  \
+	sed 's,\(.*\)\.o[ :]*,$(OUTDIR)/$*.o $@: ,g' <$@ >$(OUTDIR)/$*.d; 
+
+$(OUTDIR)/%.d.tmp:%.c
+	@echo "building dependancy for $<..."
+	@set -e; rm -f $@ $(OUTDIR)/$*.d; \
+	($(cc) $(CXXFLAGS) -MM -c $< > $@ || rm -f $@) &&  \
+	sed 's,\(.*\)\.o[ :]*,$(OUTDIR)/$*.o $@: ,g' <$@ >$(OUTDIR)/$*.d; 
+
+$(OUTDIR)/%.o:%.cpp
+	$(CC) $(CXXFLAGS) -c $< -o $@
+
+$(OUTDIR)/%.o:%.c
+	$(CC) $(CXXFLAGS) -c $< -o $@
+
+AutoMsg/%.h:AutoMsg/%.msg $(PROJBASE)/build/genMsg.pl
+	perl $(PROJBASE)/build/genMsg.pl $<
+
+LuaObject/%.cpp: LuaObject/%.pkg
+	$(PROJBASE)/3PP/tolua++/bin/tolua++ -o $@ $<
+
+depend: $(OUTDIR) $(OUTSUBDIR) $(DEPENDTARGET)
+testdepend: $(OUTDIR) $(TESTOUTSUBDIR) $(TESTDEPENDTARGET)
+
+.PHONY:clean depend test testdepend
+clean:
+	rm -rf $(OUTDIR) $(AUTOTARGET)
+
+

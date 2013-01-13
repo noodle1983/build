@@ -1,0 +1,80 @@
+#########################################
+#                top dir                #
+#########################################
+PROJBASE=$(CURDIR)/
+
+#########################################
+#                target                 #
+#########################################
+DEPENDDIR=
+
+SUBDIR= ./src/base \
+	./src/base/algorithm \
+	./src/base/algorithm/base64 \
+	./src/base/algorithm/crypto \
+	./src/base/algorithm/hmac \
+	./src/base/algorithm/json \
+	./src/base/algorithm/libjpeg_turbo \
+	./src/base/algorithm/libpng \
+	./src/base/algorithm/md5 \
+	./src/base/algorithm/sha1 \
+	./src/base/algorithm/sha2 \
+	./src/base/algorithm/zlib \
+	./src/base/debug \
+	./src/base/i18n \
+	./src/base/memory \
+	./src/base/metric \
+	./src/base/synchronization \
+	./src/base/system_monitor \
+	./src/base/threading \
+	./src/base/win \
+
+EXCEPT_FILES= \
+	%test.cc \
+	%android.cc \
+	%mac.cc \
+	%ios.cc \
+	%string16.cc \
+	%libevent.cc \
+	%linux.cc \
+	%posix.cc \
+
+#########################################
+#      header and lib dependancy        #
+#########################################
+INC_DIR= -DUNICODE -DCOMPILER_GCC \
+	-I./src/ \
+	-I./src/base/algorithm \
+	-I./src/base/algorithm/base64 \
+	-I./src/base/algorithm/crypto \
+	-I./src/base/algorithm/hmac \
+	-I./src/base/algorithm/json \
+	-I./src/base/algorithm/libjpeg_turbo \
+	-I./src/base/algorithm/libpng \
+	-I./src/base/algorithm/md5 \
+	-I./src/base/algorithm/sha1 \
+	-I./src/base/algorithm/sha2 \
+	-I./src/base/algorithm/zlib \
+	-I./src/base/debug \
+	-I./src/base/i18n \
+	-I./src/base/memory \
+	-I./src/base/metric \
+	-I./src/base/synchronization \
+	-I./src/base/system_monitor \
+	-I./src/base/threading \
+	-I./src/base/win \
+
+STATIC_LIB= 
+SHARED_LIB_DIR=
+SHARED_LIB=
+
+#########################################
+#              compiler                 #
+#########################################
+include $(PROJBASE)/build/makefile.compiler.gcc
+
+#########################################
+#              rules                    #
+#########################################
+include $(PROJBASE)/build/makefile.compile.rules
+

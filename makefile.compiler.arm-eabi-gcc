@@ -1,0 +1,12 @@
+CC=$(PROJBASE)/build/agcc
+cc=$(PROJBASE)/build/agcc
+AR=arm-eabi-ar
+RANLIB=arm-eabi-ranlib
+ARFLAGS=rcs
+SHAREDFLAG= -fPIC -shared
+CXXFLAGS=-DDEBUG -fPIC -Wall -Wno-write-strings -g $(INC_DIR) 
+CFLAGs=-DDEBUG -fPIC -Wall -Wno-write-strings -g $(INC_DIR)
+#CXXFLAGS=-Wall -Wno-write-strings -g -O2 $(INC_DIR) 
+#CFLAGs=-Wall -Wno-write-strings -g -O2 $(INC_DIR)
+LDFLAGS= $(SHARED_LIB_DIR) $(SHARED_LIB) $(STATIC_LIB)
+

@@ -1,0 +1,12 @@
+#########################################
+#      header and lib dependancy        #
+#########################################
+INC_DIR+= -I$(PROJBASE)/linux_3pp/libevent/include
+
+STATIC_LIB+= \
+    $(PROJBASE)/linux_3pp/libevent/lib/libevent.a \
+    $(PROJBASE)/linux_3pp/libevent/lib/libevent_pthreads.a \
+
+SHARED_LIB_DIR+=
+SHARED_LIB+= 
+

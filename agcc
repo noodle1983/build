@@ -1,0 +1,347 @@
+#!/usr/bin/perl -w
+use strict;
+#gaudy displaying
+use Term::ANSIColor;
+########################################################################
+# Copyright 2008, Andrew Ross andy@plausible.org
+# Distributed under the terms of the GNU GPL
+# Copyright 2011,Rozenixian Lane(shohyanglim@gmail.com)
+# Modified to use the NDK with full C++ support,etc., 
+# 	any use and feedback is appreciated!
+# Last updated in  2011.05.13
+########################################################################
+#Extract the toolchain from local NDK and set the flags
+my $GCC = `which arm-eabi-gcc`;
+$GCC = qx(cd `dirname $GCC`; /bin/pwd);
+chomp $GCC;
+die "bad arm-eabi-gcc path" if $GCC !~ /(.*)\/prebuilt\//;
+my $DROID = $1;
+my $NDK = "$DROID/..";
+my $ALIB = "$DROID/platforms/android-8/arch-arm/usr/lib";
+my $AINCLUDE = "$DROID/platforms/android-8/arch-arm/usr/include";
+my $TOOLCHAIN = "$DROID/prebuilt/linux-x86/arm-eabi-4.4.0";
+my $CLIB = "$TOOLCHAIN/arm-eabi/lib";  
+my @include_paths = ("-I$AINCLUDE");
+my @cpp_flags = (
+    "-D__ARM_ARCH_5__",
+    "-D__ARM_ARCH_5T__",
+    "-D__ARM_ARCH_5E__",
+    "-D__ARM_ARCH_5TE__",
+    "-DANDROID",
+    "-D_GNU_SOURCE",
+    "-DNDEBUG"
+);
+my @cflags =(
+#    "-mthumb-interwork",
+    "-march=armv5te",
+    "-mtune=xscale",
+    "-msoft-float",
+#    "-mthumb",
+    "-mandroid",
+    "-fpic",
+    "-fPIC",
+    "-ffunction-sections",
+    "-funwind-tables",
+    "-fstack-protector",
+    "-fno-short-enums",
+    "-fomit-frame-pointer",
+    "-fno-strict-aliasing",
+    "-finline-limit=64",
+    "-Wno-psabi",
+    "-Wa,--noexecstack",
+    "-Os",
+    "-O2",
+    "-c"
+);
+my @shared_flags =(
+    "-nostdlib",
+    "-Wl,-shared,-Bsymbolic",
+    "-Wl,--no-undefined",
+    "-Wl,-z,noexecstack",
+    "-Wl,-T,$CLIB/ldscripts/armelf.xsc",     
+    "-Wl,-rpath-link=$ALIB"
+);
+my @link_flags =(
+    "-nostdlib",
+    "-Bdynamic",
+    "-Wl,-dynamic-linker,/system/bin/linker",
+    "-Wl,--gc-sections",
+    "-Wl,-z,nocopyreloc",
+    "-Wl,--no-undefined","-Wl,-z,noexecstack",
+    "-Wl,-T,$CLIB/ldscripts/armelf.x",     
+    "-Wl,-rpath-link=$ALIB"
+);
+# The support of C++ is dwelt in the lib*.a files
+# In linking the libgcc.a must be the last.
+my @cxx_objs =(
+    "-L$ALIB",
+    "-lc",
+    "-lm",
+    "$CLIB/libstdc++.a",
+    "$CLIB/libsupc++.a",  
+    "$TOOLCHAIN/lib/gcc/arm-eabi/4.4.0/libgcc.a"
+);
+my @cxx_execobjs =(
+    "$ALIB/crtend_android.o",
+    "$ALIB/crtbegin_dynamic.o"
+);
+# Now implement a quick parser for a gcc-like command line
+my %MODES = ("-E"=>1, "-c"=>1, "-S"=>1, "-shared"=>1);
+my $mode = "DEFAULT";
+my $out;
+my $print_msg = 1;
+my $lang;
+my $link_work = 0;
+my $warn = 0;
+my $opt = 0;
+my @args = ();
+my @cpp_args = ();
+my @cmp_args = ();
+#my @link_objs = ();
+my @src = ();
+my @temps = ();
+my @msg = ();
+my $have_src = 0;
+my $need_debug = 0;
+while(@ARGV) {
+    my $a = shift;
+    if(defined $MODES{$a}) {
+	die "Can't specify $a and $mode" if $mode ne "DEFAULT";
+	$mode = $a;
+    } elsif($a eq "-o") {
+	die "Missing -o argument" if !@ARGV;
+	die "Duplicate -o argument" if defined $out;
+	$out = shift;
+    } elsif($a eq "-x") {
+	die "Missing -x argument" if !@ARGV;
+	$lang = shift;
+    } elsif($a =~ /^-(f|m|std).*/) {
+	push	@cmp_args,$a;
+    } elsif($a =~ /^-g/) {
+	$need_debug = 1;
+    } elsif($a =~ /^-MM/) {
+	push @cpp_args, $a;
+	$print_msg = 0;
+    } elsif(($a =~ /^-I.*/)||($a =~ /^-D.*/)||($a =~ /^-U.*/)) {
+	push @cpp_args, $a;
+    } elsif($a =~ /\.(c|cc|cpp|cxx)$/i) {
+	$have_src = 1;
+	push @src, $a;
+    } else{
+	if($a =~ /\.(o|lo|so|a|la)$/) {
+	    $link_work = 1;
+	    #we need not to handle this,
+	    #just leave it to arm-eabi-gcc
+	    #push @link_objs, $a;
+	} elsif($a =~ /^-W.*/) {
+	    $warn = 1;
+	} elsif($a =~ /^-O.*/) {
+	    $opt = 1;
+	}
+	push @args, $a;
+    }
+}
+my $exit_val = 0;
+my $need_cpp = 0;
+my $need_compile = 0;
+my $need_link = 0;
+my $need_shlink = 0;
+my $to_as = 0;
+if($mode eq "DEFAULT") { $need_cpp = $need_compile = $need_link = 1; }
+if($mode eq "-E") { $need_cpp = 1; }
+if($mode eq "-c") { $need_cpp = $need_compile = 1; }
+if($mode eq "-S") { $to_as = $need_cpp = $need_compile = 1; }
+if($mode eq "-shared") { $need_shlink = 1; }
+if($have_src and $mode ne "-E") { $need_cpp = $need_compile = 1; }
+# Assemble and process the command:
+if($have_src)
+{
+    foreach(@src)
+    {
+#arm-eabi-gcc/g++ -c to compile for each src into src.o
+	my @precmd = ();
+	if($_ =~ /\.(cc|cpp|cxx)$/i)
+	{
+	    @precmd = ("arm-eabi-g++");
+	}
+	else
+	{
+	    @precmd = ("arm-eabi-gcc");
+	}
+	if(defined($lang))
+	{
+	    @precmd = (@precmd, "-x", $lang);
+	}
+	@precmd = (@precmd, $_);
+	if(($mode eq "-E")||($mode eq "-S"))
+	{
+	    @precmd = (@precmd, $mode);
+	}
+	if($need_cpp)
+	{
+	    @precmd = (@precmd,@cpp_args,@cpp_flags,@include_paths);
+	}
+	if($need_debug)
+	{
+	    #I have to lose weight.
+	    @precmd = (@precmd, "-g0");
+	}
+	if($opt)
+	{
+	    #a cure to fix some SIGBUS
+	    #in use,remove the previous -Os,-O2..
+	    #@precmd = (@precmd, "-O0");
+	}
+	my $temp;
+	if($need_compile)
+	{
+	    if($_ =~ /\.(cpp|cc|cxx)$/i)
+	    {
+		@msg=("Compile Thumb++\t:$_\t===>");
+	    }
+	    else
+	    {
+		@msg=("Compile Thumb\t:$_\t===>");
+	    }
+	    if($to_as)
+	    {
+		s/\.(c|cc|cpp|cxx)$/.s/gi;
+	    }
+	    else
+	    {
+		s/\.(c|cc|cpp|cxx)$/.o/gi;
+	    }
+	    $temp = $_;
+	    @precmd = (@precmd, @cflags);
+	    @precmd = (@precmd, @cmp_args);
+	    if($mode ne "-c" && $mode ne "-S")
+	    {
+		@precmd = (@precmd, "-o", $temp);
+		    @msg=(@msg,$temp);
+	    }
+	    else{
+		if(defined $out) { 
+		    @precmd = (@precmd, "-o", $out);
+		    @msg=(@msg,$out);
+		}
+	    }
+	}
+	print color 'reset' if $print_msg;
+	print color 'red' if $print_msg;
+	print join(" ", @msg), "\n" if $print_msg; # Spit it out if you're curious
+	print color 'reset' if $print_msg;
+	print color 'dark blue' if $print_msg;
+	print join(" ", @precmd), "\n" if $print_msg; # Spit it out if you're curious
+	print color 'reset' if $print_msg;
+	$exit_val = system(@precmd);
+	$exit_val == 0
+	    or die "=======Failed to compile!=========\n";
+	if(defined($temp))
+	{
+	    push @temps,$temp;
+	}
+    }
+#arm-eabi-gcc to link all the objs
+    if($need_shlink||$need_link)
+    {
+	my @lastcmd = ("arm-eabi-gcc");
+	@lastcmd = (@lastcmd,@temps);
+	@lastcmd = (@lastcmd, @args);
+	if($need_shlink)
+	{ 
+	    @lastcmd = (@lastcmd, @shared_flags); 
+	    @lastcmd = (@lastcmd,@cxx_objs);
+	    @msg=("Link ARM shared lib\t:",@temps,"\t====>");
+	}
+	else 
+	{
+	    @msg=("Link ARM executable\t:",@temps,"\t====>");
+	    @lastcmd = (@lastcmd, @link_flags);
+	    @lastcmd = (@lastcmd,@cxx_objs,@cxx_execobjs);
+	}
+	if(defined $out) { 
+	    @lastcmd = (@lastcmd, "-o", $out);
+	    @msg=(@msg,$out);
+	}
+	else
+	{
+	    @msg=(@msg,"a.out");
+	}
+	print color 'reset' if $print_msg;
+	print color 'red' if $print_msg;
+	print join(" ", @msg), "\n" if $print_msg; # Spit it out if you're curious
+	print color 'reset' if $print_msg;
+	print color 'blue' if $print_msg;
+	print join(" ", @lastcmd), "\n" if $print_msg; # Spit it out if you're curious
+	print color 'reset' if $print_msg;
+	$exit_val = system(@lastcmd);
+	foreach(@temps)
+	{
+	    system("rm $_");
+	}
+	$exit_val == 0
+	    or die "=======Failed to link!=========\n";
+    }
+}
+else #the other work
+{
+    my @lastcmd = ("arm-eabi-gcc");
+    if($mode ne "DEFAULT")
+    {
+	@lastcmd = (@lastcmd, $mode);
+    }
+    if($need_debug)
+    {
+	@lastcmd = (@lastcmd, "-g");
+    }
+    @lastcmd = (@lastcmd, @args);
+    if($link_work)
+    {
+	if($need_shlink)
+	{
+	    @lastcmd = (@lastcmd, @shared_flags); 
+	    @lastcmd = (@lastcmd,@cxx_objs);
+	}
+	else
+	{
+	    @lastcmd = (@lastcmd, @link_flags);
+	    @lastcmd = (@lastcmd,@cxx_execobjs,@cxx_objs,);
+	}
+    }
+    if(defined $out) { 
+	@lastcmd = (@lastcmd, "-o", $out);
+    }
+    print color 'reset' if $print_msg;
+    print color 'dark magenta' if $print_msg;
+    print join(" ", @lastcmd), "\n" if $print_msg; # Spit it out if you're curious
+    print color 'reset' if $print_msg;
+    $exit_val = system(@lastcmd);
+    $exit_val == 0
+	or die "=======Failed to work!=========\n";
+}
+#arm-eabi-strip the target to be slim
+#if($link_work||$need_link||$need_shlink)
+#{
+#    #slim is fashion!
+#    my @postcmd = ("arm-eabi-strip");
+#    @postcmd = (@postcmd,"--strip-unneeded");
+#    if(not defined $out) { 
+#		$out = "a.out";
+#    }
+#	@postcmd = (@postcmd,$out);
+#    print color 'reset' if $print_msg;
+#    print color 'dark red' if $print_msg;
+#    @msg = ("Strip for target\t====>\t",$out);
+#    print join(" ", @msg), "\n" if $print_msg; # Spit it out if you're curious
+#    print color 'reset' if $print_msg;
+#    print color 'blue' if $print_msg;
+#    print join(" ", @postcmd), "\n" if $print_msg; # Spit it out if you're curious
+#    print color 'reset' if $print_msg;
+#    $exit_val = system(@postcmd);
+#    $exit_val == 0
+#	or die "=======Failed to strip!=========\n";
+#}
+
+print color 'reset' if $print_msg;
+exit $exit_val;
+
