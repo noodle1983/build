@@ -38,11 +38,23 @@ EXCEPT_FILES= \
 	%libevent.cc \
 	%linux.cc \
 	%posix.cc \
+	%win.cc \
+	%freebsd.cc \
+	%chromeos.cc \
+	%openbsd.cc \
+	%nacl.cc \
+	%aurax11.cc \
+	%glib.cc \
+	%gtk.cc \
+	%linux_util.cc \
 
 #########################################
 #      header and lib dependancy        #
 #########################################
-INC_DIR= -DUNICODE -DCOMPILER_GCC \
+INC_DIR=-O -fno-omit-frame-pointer \
+	-DUNICODE \
+	-DCOMPILER_GCC \
+	-DCOPY_FILE_COPY_SYMLINK \
 	-I./src/ \
 	-I./src/base/algorithm \
 	-I./src/base/algorithm/base64 \
@@ -63,6 +75,7 @@ INC_DIR= -DUNICODE -DCOMPILER_GCC \
 	-I./src/base/system_monitor \
 	-I./src/base/threading \
 	-I./src/base/win \
+	-I./icu_devel/include \
 
 STATIC_LIB= 
 SHARED_LIB_DIR=
