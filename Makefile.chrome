@@ -52,6 +52,7 @@ EXCEPT_FILES= \
 #      header and lib dependancy        #
 #########################################
 INC_DIR=-O -fno-omit-frame-pointer \
+	-include port_mingw.h \
 	-DUNICODE \
 	-DCOMPILER_GCC \
 	-DCOPY_FILE_COPY_SYMLINK \
