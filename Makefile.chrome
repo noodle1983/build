@@ -56,6 +56,10 @@ SUBDIR= ./src/base \
 	./src/ui/base/range \
 	./src/ui/base/gestures \
 	./src/ui/base/keycodes \
+	./src/ui/gfx \
+	./src/ui/gfx/image \
+	./src/ui/gfx/codec \
+
 
 
 
@@ -73,6 +77,7 @@ EXCEPT_FILES= \
 	%unittests.cc \
 	%gtk.cc \
 	%stub.cc \
+	%unittest_util.cc \
 	\
 	%base/debug_message.cc \
 	%file_path_watcher_kqueue.cc \
@@ -84,6 +89,8 @@ EXCEPT_FILES= \
 	\
 	%ui/base/cursor/cursor_loader_x11.cc \
 	%ui/base/cursor/cursor_x11.cc \
+	%ui/gfx/gdi_util.cc \
+	%ui/gfx/icon_util.cc \
 
 #########################################
 #      header and lib dependancy        #
@@ -130,6 +137,7 @@ INC_DIR=-O -fno-omit-frame-pointer \
 	\
 	\
 	-DUSE_X11 \
+	-DUI_IMPLEMENTATION \
 	\
 	-I./resource \
 	-I./src/skia/config \
