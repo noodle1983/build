@@ -59,6 +59,28 @@ SUBDIR= ./src/base \
 	./src/ui/gfx \
 	./src/ui/gfx/image \
 	./src/ui/gfx/codec \
+	./src/ui/views \
+	./src/ui/views/widget \
+	./src/ui/views/ime \
+	./src/ui/views/accessibility \
+	./src/ui/views/touchui \
+	./src/ui/views/window \
+	./src/ui/views/animation \
+	./src/ui/views/focus \
+	./src/ui/views/controls \
+	./src/ui/views/controls/native \
+	./src/ui/views/controls/textfield \
+	./src/ui/views/controls/tabbed_pane \
+	./src/ui/views/controls/webview \
+	./src/ui/views/controls/combobox \
+	./src/ui/views/controls/tree \
+	./src/ui/views/controls/scrollbar \
+	./src/ui/views/controls/table \
+	./src/ui/views/controls/button \
+	./src/ui/views/bubble \
+	./src/ui/views/color_chooser \
+	./src/ui/views/layout \
+
 
 
 
@@ -91,6 +113,15 @@ EXCEPT_FILES= \
 	%ui/base/cursor/cursor_x11.cc \
 	%ui/gfx/gdi_util.cc \
 	%ui/gfx/icon_util.cc \
+	%ui/views/drag_utils.cc \
+	%ui/views/widget/child_window_message_processor.cc \
+	%ui/views/widget/widget_message_filter.cc \
+	%ui/views/controls/native_control.cc \
+	%ui/views/widget/aero_tooltip_manager.cc \
+	%ui/views/widget/native_widget_aura_window_observer.cc \
+	%ui/views/widget/widget_hwnd_utils.cc \
+	%ui/views/corewm/compound_event_filter.cc \
+	%ui/views/corewm/tooltip_controller.cc \
 
 #########################################
 #      header and lib dependancy        #
