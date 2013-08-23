@@ -6,8 +6,8 @@ PROJBASE=$(CURDIR)/..
 #########################################
 #                target                 #
 #########################################
-PRE_CMD=echo "pre compile cmd"
-POST_CMD=echo "post compile cmd on success"
+PRE_CMD=echo 'pre compile cmd'
+POST_CMD=echo 'post compile cmd on success'
 SUBDIR=
 EXCEPT_FILES=  %test.cpp 
 

@@ -13,7 +13,7 @@ PRE_CMD= \
 		find ../src/ui/ -name "*.grd" |xargs -I{} ../src/tools/grit/grit.py -i {} -v build ; \
 	fi	
 
-POST_CMD=echo "post compile cmd on success"
+POST_CMD=echo 'post compile cmd on success'
 
 DEPENDDIR=
 
@@ -42,7 +42,6 @@ SUBDIR= ./src/base \
 	./src/ui/base/cursor \
 	./src/ui/base/accessibility \
 	./src/ui/base/events \
-	./src/ui/base/x \
 	./src/ui/base/animation \
 	./src/ui/base/accelerators \
 	./src/ui/base/strings \
@@ -70,6 +69,7 @@ EXCEPT_FILES= \
 	%chromeos.cc \
 	%openbsd.cc \
 	%aurax11.cc \
+	%aura.cc \
 	%unittests.cc \
 	%gtk.cc \
 	%stub.cc \
@@ -81,6 +81,9 @@ EXCEPT_FILES= \
 	%base/allocator/generic_allocators.cc \
 	%base/allocator/unittest_utils.cc \
 	%base/allocator/win_allocator.cc \
+	\
+	%ui/base/cursor/cursor_loader_x11.cc \
+	%ui/base/cursor/cursor_x11.cc \
 
 #########################################
 #      header and lib dependancy        #
