@@ -73,8 +73,22 @@ TESTDEPENDTARGET=$(patsubst %.d, %.d.tmp, $(TESTDEPENDFILES))
 #########################################
 #               Rules                   #
 #########################################
-all:$(TARGET)
-test:$(TESTTARGET)
+all: prepare $(TARGET)
+	@if [ "" != "$POST_CMD" ]; then \
+		$(POST_CMD); \
+	fi;
+	
+test: prepare $(TESTTARGET)
+	@if [ "" != "$POST_CMD" ]; then \
+		$(POST_CMD); \
+	fi;
+	
+prepare:
+	@if [ "" != "$PRE_CMD" ]; then \
+		$(PRE_CMD); \
+	fi;
+
+
 
 $(STATIC_TARGET):$(AUTOTARGET) depend dependdir $(OUTDIR) $(OUTSUBDIR) $(OBJECTS)
 	$(AR) $(ARFLAGS) $(OUTDIR_PREFIX)/$(STATIC_TARGET) $(OBJECTS)
@@ -160,7 +174,7 @@ testdepend: $(OUTDIR) $(TESTOUTSUBDIR) $(TESTDEPENDTARGET)
 
 FORCE:
 
-.PHONY:clean depend test testdepend dependdir
+.PHONY:clean depend test testdepend dependdir prepare
 clean:
 	@rm -rf $(OUTDIR) $(AUTOTARGET) \
 		$(OUTDIR_PREFIX)/$(MOD_NAME).objectlist \

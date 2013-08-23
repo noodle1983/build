@@ -6,6 +6,9 @@ PROJBASE=$(CURDIR)/
 #########################################
 #                target                 #
 #########################################
+PRE_CMD=echo "pre compile cmd"
+POST_CMD=echo "post compile cmd on success"
+
 DEPENDDIR=
 
 SUBDIR= ./src/base \
@@ -28,6 +31,27 @@ SUBDIR= ./src/base \
 	./src/base/nix \
 	./src/base/message_loop \
 	./src/base/synchronization \
+	\
+	./src/ui/base/ime \
+	./src/ui/base/cursor \
+	./src/ui/base/accessibility \
+	./src/ui/base/events \
+	./src/ui/base/x \
+	./src/ui/base/animation \
+	./src/ui/base/accelerators \
+	./src/ui/base/strings \
+	./src/ui/base/native_theme \
+	./src/ui/base/models \
+	./src/ui/base/resource \
+	./src/ui/base/dragdrop \
+	./src/ui/base/clipboard \
+	./src/ui/base/touch \
+	./src/ui/base/l10n \
+	./src/ui/base/text \
+	./src/ui/base/range \
+	./src/ui/base/gestures \
+	./src/ui/base/keycodes \
+
 
 
 EXCEPT_FILES= \
@@ -50,7 +74,7 @@ EXCEPT_FILES= \
 	%base/allocator/debugallocation_shim.cc \
 	%base/allocator/generic_allocators.cc \
 	%base/allocator/unittest_utils.cc \
-	%/base/allocator/win_allocator.cc \
+	%base/allocator/win_allocator.cc \
 
 #########################################
 #      header and lib dependancy        #
@@ -94,6 +118,11 @@ INC_DIR=-O -fno-omit-frame-pointer \
 	-I/usr/include/cairo \
 	-I/usr/include/pango-1.0/ \
 	-I/usr/include/atk-1.0 \
+	\
+	\
+	-DUSE_X11 \
+	\
+	-I./src/skia/config \
 
 
 STATIC_LIB= 
