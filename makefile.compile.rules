@@ -74,20 +74,19 @@ TESTDEPENDTARGET=$(patsubst %.d, %.d.tmp, $(TESTDEPENDFILES))
 #               Rules                   #
 #########################################
 all: prepare $(TARGET)
-	@if [ "" != "$POST_CMD" ]; then \
+	@if [ "" != "$(POST_CMD)" ]; then \
 		$(POST_CMD); \
 	fi;
 	
 test: prepare $(TESTTARGET)
-	@if [ "" != "$POST_CMD" ]; then \
+	@if [ "" != "$(POST_CMD)" ]; then \
 		$(POST_CMD); \
 	fi;
 	
 prepare:
-	@if [ "" != "$PRE_CMD" ]; then \
+	@if [ "" != "$(PRE_CMD)" ]; then \
 		$(PRE_CMD); \
 	fi;
-
 
 
 $(STATIC_TARGET):$(AUTOTARGET) depend dependdir $(OUTDIR) $(OUTSUBDIR) $(OBJECTS)

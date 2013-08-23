@@ -6,7 +6,13 @@ PROJBASE=$(CURDIR)/
 #########################################
 #                target                 #
 #########################################
-PRE_CMD=echo "pre compile cmd"
+PRE_CMD= \
+	if [ ! -e $(PROJBASE)/resource ] ;then  \
+		mkdir $(PROJBASE)/resource ; \
+		cd $(PROJBASE)/resource ; \
+		find ../src/ui/ -name "*.grd" |xargs -I{} ../src/tools/grit/grit.py -i {} -v build ; \
+	fi	
+
 POST_CMD=echo "post compile cmd on success"
 
 DEPENDDIR=
@@ -122,7 +128,9 @@ INC_DIR=-O -fno-omit-frame-pointer \
 	\
 	-DUSE_X11 \
 	\
+	-I./resource \
 	-I./src/skia/config \
+	-I./src/third_party/skia/include/core/ \
 
 
 STATIC_LIB= 
