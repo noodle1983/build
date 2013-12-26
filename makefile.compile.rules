@@ -73,16 +73,28 @@ TESTDEPENDTARGET=$(patsubst %.d, %.d.tmp, $(TESTDEPENDFILES))
 #########################################
 #               Rules                   #
 #########################################
+all: CFLAGS=$(DEBUG_FLAGS) $(CFLAGS)
+all: CXXFLAGS=$(DEBUG_FLAGS) $(CXXFLAGS)
 all: prepare $(TARGET)
 	@if [ "" != "$(POST_CMD)" ]; then \
 		$(POST_CMD); \
 	fi;
-	
+
+debug: all
+
+release: CFLAGS=$(RELEASE_FLAGS) $(CFLAGS)
+release: CXXFLAGS=$(RELEASE_FLAGS) $(CXXFLAGS)
+release: prepare $(TARGET)
+	@if [ "" != "$(POST_CMD)" ]; then \
+		$(POST_CMD); \
+	fi;
+
 test: prepare $(TESTTARGET)
 	@if [ "" != "$(POST_CMD)" ]; then \
 		$(POST_CMD); \
 	fi;
-	
+
+
 prepare:
 	@if [ "" != "$(PRE_CMD)" ]; then \
 		$(PRE_CMD); \
@@ -126,8 +138,7 @@ $(OUTSUBDIR):
 $(SYMBOL_OUTDIR):$(OUTDIR_PREFIX)
 	@if [ ! -d $@ ]; then mkdir -p $@; fi;
 
--include $(DEPENDFILES)
--include $(TESTDEPENDFILES)
+-include $(DEPENDFILES) $(TESTDEPENDFILES)
 $(OUTDIR)/%.d.tmp:%.cc
 	@echo "building dependancy for $<..."
 	@set -e; rm -f $@ $(OUTDIR)/$*.d; \
@@ -173,7 +184,7 @@ testdepend: $(OUTDIR) $(TESTOUTSUBDIR) $(TESTDEPENDTARGET)
 
 FORCE:
 
-.PHONY:clean depend test testdepend dependdir prepare
+.PHONY:clean depend test testdepend dependdir prepare prepare_debug debug release
 clean:
 	@rm -rf $(OUTDIR) $(AUTOTARGET) \
 		$(OUTDIR_PREFIX)/$(MOD_NAME).objectlist \
