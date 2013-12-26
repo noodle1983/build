@@ -8,6 +8,10 @@ PROJBASE=$(CURDIR)/..
 #########################################
 PRE_CMD=echo 'pre compile cmd'
 POST_CMD=echo 'post compile cmd on success'
+
+#build shared target
+#COMPILE_SHARED=1
+
 SUBDIR=
 EXCEPT_FILES=  %test.cpp 
 
@@ -22,7 +26,7 @@ SHARED_LIB=
 #########################################
 #              compiler                 #
 #########################################
-include $(PROJBASE)/build/makefile.compiler
+include $(PROJBASE)/build/makefile.compiler.gcc
 
 #########################################
 #              rules                    #
